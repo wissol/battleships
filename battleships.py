@@ -32,16 +32,18 @@ SUNK = '#'
 
 DECORATION_LINE = "\t" + ("-" * 66) + "\n"
 
-NUM_PLAYERS = 2 # Just for code clarity
-FLEETS = ["Red", "Blue"] # Naming the fleets
+NUM_PLAYERS = 2  # Just for code clarity
+FLEETS = ["Red", "Blue"]  # Naming the fleets
+
 
 # Auxiliary functions
 def clear_screen():
-# Treehouse code
+    # Treehouse code
     print("\033c", end="")
 
+
 def pass_player_screen(player_name):
-### Allows to switch turns without revealing sensible data on the screen :)
+    ### Allows to switch turns without revealing sensible data on the screen :)
     clear_screen()
     print("\a\n")
     print(DECORATION_LINE * 2)
@@ -56,11 +58,12 @@ def pass_player_screen(player_name):
 
 players = []  # players is a list to contain both gamers
 
-boards = [] # list to contain players' main boards
+boards = []  # list to contain players' main boards
 
-tracking_boards = [] # list to contain players' tracking boards
+tracking_boards = []  # list to contain players' tracking boards
 
 ships = [[], []]  # list to contain players' tracking ships
+
 
 # Classes
 
@@ -69,11 +72,13 @@ class Gamer:
     Gamer class containing the name, remaining ship, the id number (number) and the rival's id number
     The id numbers are the indexes of the players, boards and tracking_boards list
     """
+
     def __init__(self, name, number):
-            self.name = name
-            self.remaining_ships = 5
-            self.number = number
-            self.rival = 1 if self.number == 0 else 0
+        self.name = name
+        self.remaining_ships = 5
+        self.number = number
+        self.rival = 1 if self.number == 0 else 0
+
 
 class Board:
     # Board class map being a list of characters, initailized with the character for empty
@@ -85,7 +90,7 @@ class Board:
 
     def print_board_heading(self):
         # Treehouse code with minor modifications to include board type
-        print("\v") # Vertical tab, just some white space
+        print("\v")  # Vertical tab, just some white space
         if self.tracking:
             print("Tracking Board".center(40))
             print(("-" * len("Tracking Board")).center(40))
@@ -110,11 +115,13 @@ class Ship:
     Ship contains the ship's name, its size and hits.
     While hits was not strictly needed, I included it for clarity.
     """
+
     def __init__(self, ship_name):
         self.locations = []
         self.name = ship_name
         self.size = SHIP_INFO[ship_name]
         self.hits = SHIP_INFO[ship_name]
+
 
 ### Game Start-Up functions
 
@@ -135,6 +142,7 @@ def ask_for_name(prompt, raw_players):
                 break
     return raw_player_name
 
+
 def welcome_screen():
     """
     Displays a welcome screen
@@ -151,6 +159,7 @@ def welcome_screen():
     print("\tThe name of the admirals will live in history, yet only the winner")
     print("\twill determine the fate of humankind.")
     print("\v")
+
 
 def generate_players(prompt):
     """
@@ -182,17 +191,30 @@ def generate_ship_location(coordinates, horizontal, ship_size):
 
     return coordinate_list
 
+
 def validate_ship_location(ship_location, board):
     """
-    Returns True if ship's location does not conflict with any other ship location
+    Returns a Tuple 
+    Tulpe [0] >> 
+    True if ship's location does not conflict with any other ship location
+    or if the ship is to be placed outside the board
+    
+    Tuple[1] = Error message if any
+    
     :param ship_location: list of coordinates for each 'square' occupied by the ship
     :param board: board where the ship is to be placed
-    :return: True or False
+    :return: Tuple (Boolean, Error Message)
     """
     for coordinate in ship_location:
+        for i in coordinate:  # new code insures no ship placed outside the board
+            if i > 9 or i < 0:
+                return False, ("\a\v\t\t*** Sir, I am sorry but given those coordinates part of our {}"
+                               "\n\twould lay outside of the battle area.")
         if board.map[coordinate[0]][coordinate[1]] != EMPTY:
-            return False
-    return True
+            return False, ("\a\v\t\t*** Excuse me Sir, I cannot place our {} there"
+                           "\n\tas there's other ship in the same area.")
+    return True, ""
+
 
 def set_ship_in_board(ship_location, board, horizontal):
     """
@@ -214,6 +236,7 @@ def set_ship_in_board(ship_location, board, horizontal):
 
     return board
 
+
 def parse_coordinates(raw_coordinates):
     """
     1. Validates coordinates
@@ -228,7 +251,7 @@ def parse_coordinates(raw_coordinates):
     coordinate_number = ""
 
     for character in raw_coordinates.lower():
-    # sorts valid characters and numbers into two variable, discarding illegal characters (k-z, etc)
+        # sorts valid characters and numbers into two variable, discarding illegal characters (k-z, etc)
         if character in letters:
             coordinate_letter += character
         elif character in digits:
@@ -250,6 +273,7 @@ def parse_coordinates(raw_coordinates):
 
     return parsed_coordinates
 
+
 def enter_coordinates(message):
     """
     Asks the player for coordinates, returns the parsed values as a list of ints [x,y]
@@ -261,7 +285,7 @@ def enter_coordinates(message):
     parsed_coordinates = parse_coordinates(raw_coordinates)
 
     for i in parsed_coordinates:
-        if isinstance(i, str): # There's an error message, so it should be printed and not validate
+        if isinstance(i, str):  # There's an error message, so it should be printed and not validate
             print(i)
             validates = False
 
@@ -269,6 +293,7 @@ def enter_coordinates(message):
         return parsed_coordinates
     else:
         return enter_coordinates("\a" + message)
+
 
 def ask_coordinates_for_ship(ship, error_message, player):
     """
@@ -300,16 +325,21 @@ def ask_coordinates_for_ship(ship, error_message, player):
 
     raw_ship_locations = generate_ship_location(ship_location_bow, horizontal, ship.size)
 
-    if validate_ship_location(raw_ship_locations, boards[player.number]):
+    ship_validation_tuple = validate_ship_location(raw_ship_locations, boards[player.number])
+    ship_location_is_valid = ship_validation_tuple[0]
+
+    if ship_location_is_valid:
         boards[player.number] = set_ship_in_board(raw_ship_locations, boards[player.number], horizontal)
         ship.locations = raw_ship_locations
     else:
+        error_message = ship_validation_tuple[1]
         clear_screen()
         print("\v")
         boards[player.number].print_board()
-        ask_coordinates_for_ship(ship, "\a\v\tI cannot place your ship there as there's other ship in the same area", player)
+        ask_coordinates_for_ship(ship, error_message.format(ship.name), player)
 
     return boards[player.number]
+
 
 def set_up_board(player):
     """
@@ -325,32 +355,34 @@ def set_up_board(player):
 
     return boards_player
 
+
 # Main game functions
 
 def sink_ship(sank_ship, t_board, rival_board):
-   """
+    """
    Updates the players tracting board and the rival's main board with the character for a SUNK vessel '#'
    :param sank_ship: Ship that has been sunk
    :param t_board: Board (tracking)
    :param rival_board: Board (rival's main board)
    :return: Both boards
    """
-   for location in sank_ship.locations:
+    for location in sank_ship.locations:
         x = location[0]
         y = location[1]
         t_board[x][y] = SUNK
         rival_board[x][y] = SUNK
-   return t_board, rival_board
+    return t_board, rival_board
+
 
 def hit_ship(gun_aim, rival):
-   """
+    """
     1. Decrements ship hits
     2. Checks if ship has been sunk. In that case decrements the rivals remaining ship
    :param gun_aim: [int] coordinates as indexes
    :param rival: Gamer
    :return: Ship that has been sunk or None
    """
-   for ship in ships[rival.number]:
+    for ship in ships[rival.number]:
         if gun_aim in ship.locations:
             ship.hits -= 1
             if ship.hits == 0:
@@ -359,6 +391,7 @@ def hit_ship(gun_aim, rival):
             else:
                 return None
 
+
 def print_main_and_tracking_boards(player_number):
     """
     :param player_number: int with the players index
@@ -366,6 +399,7 @@ def print_main_and_tracking_boards(player_number):
     """
     boards[player_number].print_board()  # cannot print whatever.map as it's the class which owns the method
     tracking_boards[player_number].print_board()
+
 
 def shoot(player, players, boards, tracking_boards):
     """
@@ -390,8 +424,9 @@ def shoot(player, players, boards, tracking_boards):
     while we_must_fire:
         gun_aim = enter_coordinates("\tAdmiral {}, please enter the coordinates for your gun: ".format(player.name))
         if t_board[gun_aim[0]][gun_aim[1]] in ".#*":
-            print("\a\v\t*** Admiral {}, you might consider firing somewhere else, as we had already fired there.".format(
-                player.name))
+            print(
+                "\a\v\t*** Admiral {}, you might consider firing somewhere else, as we had already fired there.".format(
+                    player.name))
         else:
             we_must_fire = False
 
@@ -422,6 +457,7 @@ def shoot(player, players, boards, tracking_boards):
 
     waiting = input("\v\tAdmiral {}, press enter to end your turn ".format(player.name))
 
+
 def turn(player, players, boards, tracking_boards):
     """
     Swiches turns between players until there's a winner, returning its name
@@ -438,6 +474,7 @@ def turn(player, players, boards, tracking_boards):
         return winner
     else:
         return turn(rival, players, boards, tracking_boards)
+
 
 def main():
     """
@@ -473,5 +510,6 @@ def main():
         boards[i].print_board()
 
     print("\v")
+
 
 main()
