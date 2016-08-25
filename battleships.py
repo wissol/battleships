@@ -194,26 +194,21 @@ def generate_ship_location(coordinates, horizontal, ship_size):
 
 def validate_ship_location(ship_location, board):
     """
-    Returns a Tuple 
-    Tulpe [0] >> 
-    True if ship's location does not conflict with any other ship location
-    or if the ship is to be placed outside the board
-    
-    Tuple[1] = Error message if any
-    
+    Returns a String containing an error message if it doesn't validate
+
     :param ship_location: list of coordinates for each 'square' occupied by the ship
     :param board: board where the ship is to be placed
-    :return: Tuple (Boolean, Error Message)
+    :return: Error Message
     """
     for coordinate in ship_location:
         for i in coordinate:  # new code insures no ship placed outside the board
             if i > 9 or i < 0:
-                return False, ("\a\v\t\t*** Sir, I am sorry but given those coordinates part of our {}"
-                               "\n\twould lay outside of the battle area.")
+                return ("\a\v\t\t*** Sir, I am sorry but given those coordinates part of our {}"
+                        "\n\twould lay outside of the battle area.")
         if board.map[coordinate[0]][coordinate[1]] != EMPTY:
-            return False, ("\a\v\t\t*** Excuse me Sir, I cannot place our {} there"
-                           "\n\tas there's other ship in the same area.")
-    return True, ""
+            return ("\a\v\t\t*** Excuse me Sir, I cannot place our {} there"
+                    "\n\tas there's other ship in the same area.")
+    return ""
 
 
 def set_ship_in_board(ship_location, board, horizontal):
@@ -325,14 +320,12 @@ def ask_coordinates_for_ship(ship, error_message, player):
 
     raw_ship_locations = generate_ship_location(ship_location_bow, horizontal, ship.size)
 
-    ship_validation_tuple = validate_ship_location(raw_ship_locations, boards[player.number])
-    ship_location_is_valid = ship_validation_tuple[0]
+    error_message = validate_ship_location(raw_ship_locations, boards[player.number])
 
-    if ship_location_is_valid:
+    if not error_message: # no error message = it validates
         boards[player.number] = set_ship_in_board(raw_ship_locations, boards[player.number], horizontal)
         ship.locations = raw_ship_locations
-    else:
-        error_message = ship_validation_tuple[1]
+    else: # there's an error message, so let's display it and ask for coordinates again
         clear_screen()
         print("\v")
         boards[player.number].print_board()
